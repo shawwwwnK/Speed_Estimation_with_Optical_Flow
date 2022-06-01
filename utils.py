@@ -1,6 +1,7 @@
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+import numpy as np
 
 def compute_metrics(flow_pred, flow_gt, valid_flow_mask=None):
 
@@ -70,3 +71,11 @@ class InputPadder:
         ht, wd = x.shape[-2:]
         c = [self._pad[2], ht - self._pad[3], self._pad[0], wd - self._pad[1]]
         return x[..., c[0] : c[1], c[2] : c[3]]
+
+# from https://stackoverflow.com/questions/50474302/how-do-i-adjust-brightness-contrast-and-vibrance-with-opencv-python
+def increase_contrast_brightness(img, contrast, brightness):
+    img = np.int16(img)
+    img = img * (contrast/127+1) - contrast + brightness
+    img = np.clip(img, 0, 255)
+    img = np.uint8(img)
+    return img
