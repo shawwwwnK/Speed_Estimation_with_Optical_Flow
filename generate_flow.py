@@ -19,9 +19,9 @@ parser.add_argument("-n", "--sample_size", default=0, type=int)
 BRIGHTNESS = 60
 CONTRAST = 127
 
-def get_flow(image1, image2, model):
-    image1 = torch.permute(torch.from_numpy(image1), (2,0,1)).float()
-    image2 = torch.permute(torch.from_numpy(image2), (2,0,1)).float()
+def get_flow(image1, image2, model, device):
+    image1 = torch.permute(torch.from_numpy(image1), (2,0,1)).float().to(device)
+    image2 = torch.permute(torch.from_numpy(image2), (2,0,1)).float().to(device)
     padder = InputPadder(image1.shape)
     image1, image2 = padder.pad(image1, image2)
     image1 = image1.unsqueeze(0)
@@ -34,13 +34,13 @@ def get_flow(image1, image2, model):
     output = output.squeeze()
     return output
 
-def save_flow_files(video_path, flow_path, model, sample_rate):
+def save_flow_files(video_path, flow_path, model, sample_rate, device):
     for f in os.listdir(video_path):
         if f.endswith(".hevc"):
             video_file_path = os.path.join(video_path, f)
             cap = cv.VideoCapture(cv.samples.findFile(video_file_path))
-            ret, image_1 = cap.read()
-            image_2 = None
+            ret, image1 = cap.read()
+            image2 = None
             frame_num = 0
             while ret:
                 for _ in range(sample_rate - 1):
@@ -49,14 +49,16 @@ def save_flow_files(video_path, flow_path, model, sample_rate):
                         break
                 if not ret:
                     break
-                ret, image_2 = cap.read()
-                if image_2 is not None:
+                ret, image2 = cap.read()
+                if image2 is not None:
                     image1 = increase_contrast_brightness(image1, CONTRAST, BRIGHTNESS)
                     image2 = increase_contrast_brightness(image2, CONTRAST, BRIGHTNESS)
-                    flow = get_flow(image1, image2, model)
-                    write_flow(flow, os.path.join(flow_path, f[:-5], '_', str(frame_num).rjust(4, '0'), ".flo"))
+                    flow = get_flow(image1, image2, model, device)
+                    flow = flow.cpu()
+                    write_flow(flow, os.path.join(flow_path, f[:-5] + '_' + str(frame_num).rjust(4, '0') + ".flo"))
+                    print(f'Written frame {frame_num} from {os.path.join(video_path, f)}')
                     frame_num += sample_rate
-                    image_1 = image_2.copy()
+                    image1 = image2.copy()
 
 
 def main():
@@ -69,8 +71,10 @@ def main():
         sample_size = args.sample_size
 
     # prepare model
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = torchvision.models.optical_flow.raft_small(pretrained=True)
     model.eval()
+    model.to(device)
 
     # prepare directories
     train_path = os.path.join(datapath, "train")
@@ -86,8 +90,8 @@ def main():
         os.makedirs(train_flow_path)
         os.makedirs(val_flow_path)
 
-    # save_flow_files(train_path, train_flow_path, model, sample_rate)
-    save_flow_files(val_path, val_flow_path, model, sample_rate)
+    save_flow_files(train_path, train_flow_path, model, sample_rate, device)
+    save_flow_files(val_path, val_flow_path, model, sample_rate, device)
 
                 
     
