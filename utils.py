@@ -79,3 +79,48 @@ def increase_contrast_brightness(img, contrast, brightness):
     img = np.clip(img, 0, 255)
     img = np.uint8(img)
     return img
+
+# from https://github.com/vt-vl-lab/pwc-net.pytorch/blob/master/PWC_src/flowlib.py
+def write_flow(flow, filename):
+    """
+    write optical flow in Middlebury .flo format
+    :param flow: optical flow map
+    :param filename: optical flow file path to be saved
+    :return: None
+    """
+    flow = flow.detach().numpy()
+    f = open(filename, 'wb')
+    magic = np.array([202021.25], dtype=np.float32)
+    (height, width) = flow.shape[1:3]
+    w = np.array([width], dtype=np.int32)
+    h = np.array([height], dtype=np.int32)
+    magic.tofile(f)
+    w.tofile(f)
+    h.tofile(f)
+    flow.tofile(f)
+    f.close()
+def read_flow(filename):
+    """
+    read optical flow from Middlebury .flo file
+    :param filename: name of the flow file
+    :return: optical flow data in matrix
+    """
+    f = open(filename, 'rb')
+    try:
+        magic = np.fromfile(f, np.float32, count=1)[0]    # For Python3.x
+    except:
+        magic = np.fromfile(f, np.float32, count=1)       # For Python2.x
+    data2d = None
+
+    if 202021.25 != magic:
+        print('Magic number incorrect. Invalid .flo file')
+    else:
+        w = np.fromfile(f, np.int32, count=1)
+        h = np.fromfile(f, np.int32, count=1)
+        #print("Reading %d x %d flo file" % (h, w))
+        data2d = np.fromfile(f, np.float32, count=2 * w[0] * h[0])
+        # reshape data into 3D array (columns, rows, channels)
+        data2d = np.resize(data2d, (2, h[0], w[0]))
+        data2d = torch.from_numpy(data2d)
+    f.close()
+    return data2d
