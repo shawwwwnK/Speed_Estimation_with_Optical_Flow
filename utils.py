@@ -99,6 +99,7 @@ def write_flow(flow, filename):
     h.tofile(f)
     flow.tofile(f)
     f.close()
+    
 def read_flow(filename):
     """
     read optical flow from Middlebury .flo file
