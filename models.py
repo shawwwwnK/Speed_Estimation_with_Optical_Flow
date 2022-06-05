@@ -29,7 +29,7 @@ class OpticalFlowRegression(nn.Module):
         conv_out_yaw = self.conv_yaw(x)
         pool1_out_yaw = self.pool1(conv_out_yaw)
         flatten_out_yaw = self.flatten(pool1_out_yaw)
-        linear_out_yaw = self.linear_pitch(flatten_out_yaw)
+        linear_out_yaw = self.linear_yaw(flatten_out_yaw)
         out_yaw = self.pool2(linear_out_yaw)
         
     

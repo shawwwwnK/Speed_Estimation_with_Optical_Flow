@@ -3,6 +3,7 @@ import torchvision
 import numpy as np
 from utils import *
 import os
+import random
 
 def get_flow_label(flow_path, label_path, sample_rate, down_sample_rate):
     flow = []
@@ -49,3 +50,32 @@ class FlowSpeedData(torch.utils.data.Dataset):
         
     def __getitem__(self, i):
         return self.flow[i], self.label[i]
+
+class TKitti(torchvision.datasets.KittiFlow):
+    def __init__(self, root):
+        super().__init__(root=root)
+        
+    def __getitem__(self, index):
+        img1, img2, flow, valid_flow_mask = super().__getitem__(index)
+        if (random.random() > 0.5):
+            change_brightness = random.uniform(0.4, 1)
+            img1 = torchvision.transforms.functional.adjust_brightness(img1, change_brightness)
+            img2 = torchvision.transforms.functional.adjust_brightness(img2, change_brightness)
+        
+        if (random.random() > 0.5):
+            change_contrast = random.uniform(0.5, 1)
+            img1 = torchvision.transforms.functional.adjust_contrast(img1, change_contrast)
+            img2 = torchvision.transforms.functional.adjust_contrast(img2, change_contrast)
+        
+        flow = torch.from_numpy(flow)
+        valid_flow_mask = torch.from_numpy(valid_flow_mask)
+        img1 = torchvision.transforms.ToTensor()(img1)
+        img2 = torchvision.transforms.ToTensor()(img2)
+        
+        height = 368
+        width = 1232
+        img1 = torchvision.transforms.functional.crop(img1, 0, 0, height, width)
+        img2 = torchvision.transforms.functional.crop(img2, 0, 0, height, width)
+        flow = torchvision.transforms.functional.crop(flow, 0, 0, height, width)
+        valid_flow_mask = torchvision.transforms.functional.crop(valid_flow_mask, 0, 0, height, width)
+        return img1, img2, flow, valid_flow_mask
