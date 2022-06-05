@@ -12,8 +12,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Generate optical flow for data set.')
 parser.add_argument("-p", "--datapath", default="small_data", type=str)
 parser.add_argument("-r", "--sample_rate", default=2, type=int)
-parser.add_argument("-s", "--sample", default=0, type=int)
-parser.add_argument("-n", "--sample_size", default=0, type=int)
+parser.add_argument("-m", "--model_path", default="pre_trained.pt")
 
 # brightness and contrast enhancement should be between [-127, 127]
 BRIGHTNESS = 60
@@ -65,34 +64,26 @@ def main():
     # parse args
     args = parser.parse_args()
     datapath = args.datapath
-    sample = bool(args.sample)
     sample_rate = args.sample_rate
-    if sample:
-        sample_size = args.sample_size
+    model_path = args.model_path
 
     # prepare model
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = torchvision.models.optical_flow.raft_small()
-    model.load_state_dict(torch.load("fintuned_raft.pt"))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
     model.to(device)
 
     # prepare directories
-    train_path = os.path.join(datapath, "train")
-    val_path = os.path.join(datapath, "val")
-    train_flow_path = os.path.join(datapath, "train_flow")
-    val_flow_path = os.path.join(datapath, "val_flow")
-    if os.path.exists(train_flow_path):
-        for f in os.listdir(train_flow_path):
-            os.remove(os.path.join(train_flow_path, f))
-        for f in os.listdir(val_flow_path):
-            os.remove(os.path.join(val_flow_path, f))
+    video_path = os.path.join(datapath, "fine_tuned_all")
+    flow_path = os.path.join(datapath, "fine_tuned_all_flow")
+    if os.path.exists(flow_path):
+        for f in os.listdir(flow_path):
+            os.remove(os.path.join(flow_path, f))
     else:
-        os.makedirs(train_flow_path)
-        os.makedirs(val_flow_path)
+        os.makedirs(flow_path)
 
-    save_flow_files(train_path, train_flow_path, model, sample_rate, device)
-    save_flow_files(val_path, val_flow_path, model, sample_rate, device)
+    save_flow_files(video_path, flow_path, model, sample_rate, device)
 
                 
 
