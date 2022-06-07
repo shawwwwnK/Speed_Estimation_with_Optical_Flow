@@ -75,7 +75,7 @@ def main():
     model.to(device)
 
     # prepare directories
-    video_path = os.path.join(datapath, "fine_tuned_all")
+    video_path = os.path.join(datapath, "all")
     flow_path = os.path.join(datapath, "fine_tuned_all_flow")
     if os.path.exists(flow_path):
         for f in os.listdir(flow_path):

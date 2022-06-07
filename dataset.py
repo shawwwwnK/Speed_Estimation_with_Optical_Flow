@@ -58,12 +58,12 @@ class TKitti(torchvision.datasets.KittiFlow):
     def __getitem__(self, index):
         img1, img2, flow, valid_flow_mask = super().__getitem__(index)
         if (random.random() > 0.5):
-            change_brightness = random.uniform(0.4, 1)
+            change_brightness = random.uniform(0.5, 1.5)
             img1 = torchvision.transforms.functional.adjust_brightness(img1, change_brightness)
             img2 = torchvision.transforms.functional.adjust_brightness(img2, change_brightness)
         
         if (random.random() > 0.5):
-            change_contrast = random.uniform(0.5, 1)
+            change_contrast = random.uniform(0.5, 1.5)
             img1 = torchvision.transforms.functional.adjust_contrast(img1, change_contrast)
             img2 = torchvision.transforms.functional.adjust_contrast(img2, change_contrast)
         
