@@ -3,6 +3,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import numpy as np
 
+# From cs231n Project
 def compute_metrics(flow_pred, flow_gt, valid_flow_mask=None):
 
     epe = ((flow_pred - flow_gt) ** 2).sum(dim=1).sqrt()
@@ -46,6 +47,7 @@ def sequence_loss(flow_preds, flow_gt, valid_flow_mask, gamma=0.8, max_flow=400)
 
     return flow_loss
 
+# from https://github.com/princeton-vl/RAFT/blob/master/core/utils/utils.py
 class InputPadder:
     """Pads images such that dimensions are divisible by 8"""
 
@@ -100,6 +102,7 @@ def write_flow(flow, filename):
     flow.tofile(f)
     f.close()
     
+# from https://github.com/vt-vl-lab/pwc-net.pytorch/blob/master/PWC_src/flowlib.py
 def read_flow(filename):
     """
     read optical flow from Middlebury .flo file
