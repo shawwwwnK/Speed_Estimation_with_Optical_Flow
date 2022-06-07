@@ -78,3 +78,40 @@ class OpticalFlowRegression_tan(nn.Module):
         
     
         return torch.hstack((torch.abs(out_pitch), torch.abs(out_yaw)))
+
+class OpticalFlowRegression(nn.Module):
+    def __init__(self, size):
+        super(OpticalFlowRegression, self).__init__()
+        self.H = size[0]
+        self.W = size[1]
+        
+        pool_size = 4
+        self.pool1 = nn.AvgPool2d(pool_size, stride=pool_size)
+        H_pool = (self.H - pool_size) // pool_size + 1
+        W_pool = (self.W - pool_size) // pool_size + 1
+        
+        self.flatten = nn.Flatten()
+        
+        self.linear_x = nn.Linear(H_pool*W_pool, H_pool*W_pool)
+        self.linear_y = nn.Linear(H_pool*W_pool, H_pool*W_pool)
+        self.pool = nn.AvgPool1d(H_pool*W_pool)
+        
+
+    def forward(self, x):               # x shape is Batch_size, 2, H, W
+        flow_x = x[:,0,:,:]
+        flow_y = x[:,1,:,:]
+        
+        flow_x = self.pool1(flow_x)
+        flow_y = self.pool1(flow_y)
+        
+        flow_x = self.flatten(flow_x)
+        flow_y = self.flatten(flow_y)
+        
+        linear_out_x = self.linear_x(flow_x)
+        v_pred_x = self.pool(linear_out_x)
+        linear_out_y = self.linear_y(flow_y)
+        v_pred_y = self.pool(linear_out_y)
+        
+        
+        out = torch.sqrt(v_pred_x**2 + v_pred_y**2)
+        return out

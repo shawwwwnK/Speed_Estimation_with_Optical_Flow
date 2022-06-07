@@ -5,6 +5,39 @@ from utils import *
 import os
 import random
 
+class FlowSpeedData_new(torch.utils.data.Dataset):
+    def __init__(self, flow_path, label_path, down_sample_rate):
+        super().__init__()
+        self.flow = []
+        self.label = []
+        all_flow = sorted(os.listdir(flow_path))
+        for flo in all_flow:
+            flow_tensor = read_flow(os.path.join(flow_path, flo))
+            
+            # down sampling the flow
+            _, image_H, image_W = flow_tensor.shape
+            resizer = torchvision.transforms.Resize((image_H // down_sample_rate, image_W // down_sample_rate))
+            down_flow = resizer(flow_tensor)
+            self.flow.append(flow_tensor)
+                   
+            file_name = flo[:20]
+            sample_id = int(flo[-8:-4])
+            for l in os.listdir(label_path):
+                if l.startswith(file_name):
+                    label_arr = torch.load(os.path.join(label_path, l))
+                    label_arr = label_arr["speed"]
+                    speed = label_arr[sample_id]
+                    self.label.append(speed)
+            
+    def __len__(self):
+        return len(self.flow)
+        
+    def __getitem__(self, i):
+        return self.flow[i], self.label[i]
+
+
+
+### ### disgarded. Process data from the old small data set
 def get_flow_label(flow_path, label_path, sample_rate, down_sample_rate):
     flow = []
     label = []
@@ -37,6 +70,7 @@ def get_flow_label(flow_path, label_path, sample_rate, down_sample_rate):
                 
     return flow, label
 
+### disgarded. Process data from the old small data set
 class FlowSpeedData(torch.utils.data.Dataset):
     def __init__(self, flow_path, label_path, sample_rate, down_sample_rate):
         super().__init__()
@@ -79,3 +113,4 @@ class TKitti(torchvision.datasets.KittiFlow):
         flow = torchvision.transforms.functional.crop(flow, 0, 0, height, width)
         valid_flow_mask = torchvision.transforms.functional.crop(valid_flow_mask, 0, 0, height, width)
         return img1, img2, flow, valid_flow_mask
+
